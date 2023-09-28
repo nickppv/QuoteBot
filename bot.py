@@ -14,26 +14,18 @@ bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
 # здоровается с пользователями
 @bot.message_handler(commands=['start'])
-# параметр message хранит в себе всю информацию о чате и пользователе,
-# с которым работает этот чат
 def start(message):
     file = open('users.txt', 'a', encoding='utf-8')
-    file.write(f' {message.from_user.username}')
+    file.write(f'''User ID - {
+        message.from_user.id}, First name - {
+        message.from_user.first_name}, Last name - {
+        message.from_user.last_name}, Username - {
+        message.from_user.username}\n''')
     file.close()
-
-    if (message.from_user.first_name == 'Nikolay' and
-            message.from_user.last_name == 'Popov' and
-            message.from_user.username == 'kolazig'):
-        bot.send_message(message.chat.id, "Привет, Колян!")
-
-    elif message.from_user.username == 'NGC224greatring':
-        bot.send_message(message.chat.id, "Привет, принцесса!")
-
+    if message.from_user.first_name is not None:
+        bot.send_message(message.chat.id, f'Привет, {message.from_user.first_name}!')
     else:
-        bot.send_message(
-            message.chat.id,
-            f"""Привет, {message.from_user.first_name}
-            {message.from_user.last_name}!""")
+        bot.send_message(message.chat.id, 'Рад тебя видеть!')
     sleep(1.5)
     bot.send_message(message.chat.id, 'Погнали!')
     sleep(1)
@@ -62,7 +54,7 @@ def guess_quote(message):
     # создаем встроенные кнопки
     markup = types.InlineKeyboardMarkup(row_width=1)
     # и добавляем кнопки по одной
-    # в первом  значении стоит название кнопики, в значении callback_data
+    # в первом значении стоит название кнопики, в значении callback_data
     # стоит значение ответа кнопки, т.е., что передается при ее вызове.
     btn1 = types.InlineKeyboardButton(f'{list_quote[0][1]}',
                                       callback_data=f'{list_quote[0][1]}')
@@ -83,20 +75,28 @@ def guess_quote(message):
 def callback(call):
     bot.register_next_step_handler(call.message, guess_quote)
     markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-    btn = types.KeyboardButton(f'''{NEXT_ROUND_SLOGAN[randrange(0,
-                               len(NEXT_ROUND_SLOGAN))]}''')
+    btn = types.KeyboardButton(
+        f'''{NEXT_ROUND_SLOGAN[randrange(0, len(NEXT_ROUND_SLOGAN))]}'''
+    )
     markup.add(btn)
     if call.data == TRUE_QUOTE[1]:
-        bot.send_message(call.message.chat.id,
-                         f'''{AFTER_RIGHT_ANSWER[randrange(0,
-                         len(AFTER_RIGHT_ANSWER))]} Это "{TRUE_QUOTE[1]}"''',
-                         reply_markup=markup)
+        bot.send_message(call.message.chat.id, f'Ваш выбор: {call.data}')
+        sleep(1)
+        bot.send_message(
+            call.message.chat.id,
+            f'''{AFTER_RIGHT_ANSWER[randrange(0, len(AFTER_RIGHT_ANSWER))]} Это "{TRUE_QUOTE[1]}"''',
+            reply_markup=markup
+        )
     else:
-        bot.send_message(call.message.chat.id,
-                         f'''{AFTER_WRONG_ANSWER[randrange(0,
-                         len(AFTER_WRONG_ANSWER))]} Это не "{call.data}".
-                         Правильный ответ: "{TRUE_QUOTE[1]}"''',
-                         reply_markup=markup)
+        bot.send_message(call.message.chat.id, f'Ваш выбор: {call.data}')
+        sleep(1)
+        bot.send_message(
+            call.message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
+            0, len(AFTER_WRONG_ANSWER))]} Это не "{call.data}". Правильный ответ: "{TRUE_QUOTE[1]}"''',
+            reply_markup=markup
+        )
+    bot.edit_message_reply_markup(message.chat.id, message_id = message.message_id-1, reply_markup = '')
+
 
 
 # выводит всю доступную информацию о чате
@@ -108,13 +108,16 @@ def msg_info(message):
 # выводит описание
 @bot.message_handler(commands=['help'])
 def help(message):
-    bot.reply_to(message, """Игровой бот с цитатами из фильмов. Все просто:
-    4 варианта названия фильмов - один правильный. Угадываешь откуда цитата
-    - получаешь мое почтение, не угадываешь... Что ж... Правильный ответ
-    выводится и идем пересматривать классику. Автор бота: Попов Николай,
-    pvnick@yandex.ru""", parse_mode='html')
+    bot.reply_to(
+        message, """Игровой бот с цитатами из фильмов. Все просто:
+        4 варианта названия фильмов - один правильный. Угадываешь откуда
+        цитата - получаешь мое почтение, не угадываешь... Что ж...
+        Правильный ответ выводится и идем пересматривать классику.
+        Написать автору бота можно сюда: pvnick@yandex.ru""",
+        parse_mode='html'
+    )
 
 
 # запускаем бот на постоянное выполнение
-# или так: bot.infinity_polling()
-bot.polling(none_stop=True)
+bot.infinity_polling()
+# или так: bot.polling(none_stop=True)
