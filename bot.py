@@ -5,10 +5,13 @@ from time import sleep
 from answers import (AFTER_RIGHT_ANSWER,
                      AFTER_WRONG_ANSWER,
                      TRUE_QUOTE,
-                     NEXT_ROUND_SLOGAN)
+                     NEXT_ROUND_SLOGAN,
+                     STOP,
+                     AGREE)
 from config import TOKEN
 from quote import quote
-from parse_func import parse_function, plus_point, minus_point, get_ending
+from parse_func import parse_function, plus_point, minus_point, get_ending, get_rating
+
 
 bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
@@ -27,7 +30,9 @@ def start(message):
     guess_quote(message)
 
 
-@bot.message_handler(commands=['Продолжаем', 'Еще цитату!', 'Попробуем еще одну!', 'Дальше!'])
+# запустить/продолжить игру
+@bot.message_handler(func=lambda message: message.text == 'Продолжить игру')
+@bot.message_handler(func=lambda message: message.text in NEXT_ROUND_SLOGAN)
 def guess_quote(message):
     global TRUE_QUOTE
     # выбираем из списка список с названием фильма и цитатой для угадывания
@@ -62,18 +67,39 @@ def guess_quote(message):
                      reply_markup=markup)
 
 
+# остановить игру
+@bot.message_handler(func=lambda message: message.text in STOP)
+def stop_play(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn1 = types.KeyboardButton('Показать мои достижения')
+    btn2 = types.KeyboardButton('Продолжить игру')
+    markup.add(btn1, btn2)
+    bot.send_message(message.chat.id, AGREE[randrange(0, len(AGREE))], reply_markup=markup)
+
+
+# показывает рейтинг игрока
+@bot.message_handler(func=lambda message: message.text == 'Показать мои достижения')
+def gamer_rating(message):
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
+    btn1 = types.KeyboardButton('Продолжить игру')
+    markup.add(btn1)
+    rate = get_rating(message)
+    bot.send_message(message.chat.id, rate, reply_markup=markup)
+
+
 # сравниваем выданную цитату с нажатой кнопкой
 @bot.message_handler(content_types=['text'])
 def check_answer(message):
     # register_next_step_handler() принимает два обязательных аргумента:
     # первый это message, а второй это function. Работает таким образом:
     # ждёт сообщ-е пользователя и вызывает указ-ю функцию с аргументом message
-    bot.register_next_step_handler(message, guess_quote)
+    # bot.register_next_step_handler(message, guess_quote)
     markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
     btn = types.KeyboardButton(
         f'''{NEXT_ROUND_SLOGAN[randrange(0, len(NEXT_ROUND_SLOGAN))]}'''
     )
-    markup.add(btn)
+    btn2 = types.KeyboardButton(STOP[randrange(0, len(STOP))])
+    markup.add(btn, btn2)
     if message.text == TRUE_QUOTE[1]:
         # здесь хранится количество очков и правильное окончание слова 'балл'
         points = plus_point(message)
@@ -90,7 +116,8 @@ def check_answer(message):
         bot.send_message(message.chat.id, f'Ваш выбор: {message.text}')
         sleep(0.5)
         bot.send_message(message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
-            0, len(AFTER_WRONG_ANSWER))]} Это не "{message.text}". Правильный ответ: "{TRUE_QUOTE[1]}".\n{points} {ending} спишем с вашего счета''', reply_markup=markup)
+            0, len(AFTER_WRONG_ANSWER))]} Это не "{message.text}". Правильный ответ: "{
+            TRUE_QUOTE[1]}".\n{points} {ending} спишем с вашего счета''', reply_markup=markup)
 
 
 # выводит всю доступную информацию о чате
