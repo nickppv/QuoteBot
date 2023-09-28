@@ -130,3 +130,5 @@ dmypy.json
 config.py
 delete.py
 db_users.sqlite3
+quote__logo.png
+quote_logo.png
