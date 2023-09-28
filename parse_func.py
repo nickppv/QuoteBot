@@ -31,9 +31,9 @@ def parse_function(message):
 
 def get_ending(points):
     ending = ''
-    if points % 10 == 1:
+    if points % 10 == 1 and not 11 <= points <= 14:
         ending = 'балл'
-    elif points % 10 > 1 and points % 10 < 5:
+    elif points % 10 > 1 and points % 10 < 5 and not 11 <= points <= 14:
         ending = 'балла'
     else:
         ending = 'баллов'
@@ -80,3 +80,23 @@ def minus_point(message):
     cur.close()
     conn.close()
     return points
+
+
+def get_rating(message):
+    conn = sqlite3.connect('db_users.sqlite3')
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM users ORDER BY points DESC')
+    all_data = cur.fetchall()
+    cur.close()
+    conn.close()
+    actual_index = [all_data.index(i) for i in all_data if i[0] == message.from_user.id][0]
+    if not actual_index:
+        return f'''Вы на первом месте! У вас {all_data[0][-1]} {get_ending(all_data[0][-1])}. Опережение соперника за вами составляет {all_data[0][-1] - all_data[1][-1]} {get_ending(all_data[0][-1] - all_data[1][-1])}. А разрыв с третьим местом: {all_data[0][-1] - all_data[2][-1]} {get_ending(all_data[0][-1] - all_data[2][-1])}.'''
+    elif actual_index == 1:
+        return f'''Вы на втором месте! У вас {all_data[1][-1]} {get_ending(all_data[1][-1])}. От первого места вы отстаете на {all_data[0][-1] - all_data[1][-1]} {get_ending(all_data[0][-1] - all_data[1][-1])}. А разрыв с третьим местом: {all_data[1][-1] - all_data[2][-1]} {get_ending(all_data[1][-1] - all_data[2][-1])}.'''
+    elif actual_index == 2:
+        return f'Вы на третьем месте! У вас {all_data[2][-1]} {get_ending(all_data[2][-1])}. От второго места вы отстаете на {all_data[1][-1] - all_data[2][-1]} {get_ending(all_data[1][-1] - all_data[2][-1])}. А разрыв с первым местом: {all_data[0][-1] - all_data[2][-1]} {get_ending(all_data[0][-1] - all_data[2][-1])}.'
+    elif actual_index == 3:
+        return f'Вы на четвертом месте! У вас {all_data[3][-1]} {get_ending(all_data[3][-1])}. От третьего места вы отстаете на {all_data[2][-1] - all_data[3][-1]} {get_ending(all_data[2][-1] - all_data[3][-1])}. Нужно поднажать!'
+    else:
+        return f'Вы на {actual_index+1}-м месте! У вас {all_data[actual_index][-1]} {get_ending(all_data[actual_index][-1])}. От соперника впереди вы отстаете на {all_data[actual_index-1][-1] - all_data[actual_index][-1]} {get_ending(all_data[actual_index-1][-1] - all_data[actual_index][-1])}. Нужно поднажать!'
