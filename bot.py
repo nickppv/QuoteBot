@@ -80,22 +80,17 @@ def check_answer(message):
         ending = get_ending(points)
         bot.send_message(message.chat.id, f'Ваш выбор: {message.text}')
         sleep(0.5)
-        bot.send_message(
-            message.chat.id,
-            f'''{AFTER_RIGHT_ANSWER[randrange(0, len(AFTER_RIGHT_ANSWER))]} Это "{TRUE_QUOTE[1]}".\n{points} {ending} вам на счет''',
-            reply_markup=markup
-        )
+        bot.send_message(message.chat.id, f'''{AFTER_RIGHT_ANSWER[
+            randrange(0, len(AFTER_RIGHT_ANSWER))]} Это "{
+            TRUE_QUOTE[1]}".\n{points} {ending} вам на счет''', reply_markup=markup)
     else:
         # здесь хранится количество очков и правильное окончание слова 'балл'
         points = minus_point(message)
         ending = get_ending(points)
         bot.send_message(message.chat.id, f'Ваш выбор: {message.text}')
         sleep(0.5)
-        bot.send_message(
-            message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
-            0, len(AFTER_WRONG_ANSWER))]} Это не "{message.text}". Правильный ответ: "{TRUE_QUOTE[1]}".\n{points} {ending} спишем с вашего счета''',
-            reply_markup=markup
-        )
+        bot.send_message(message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
+            0, len(AFTER_WRONG_ANSWER))]} Это не "{message.text}". Правильный ответ: "{TRUE_QUOTE[1]}".\n{points} {ending} спишем с вашего счета''', reply_markup=markup)
 
 
 # выводит всю доступную информацию о чате
