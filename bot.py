@@ -8,6 +8,7 @@ from answers import (AFTER_RIGHT_ANSWER,
                      NEXT_ROUND_SLOGAN)
 from config import TOKEN
 from quote import quote
+from parse_func import parse_function, plus_point, minus_point, get_ending
 
 bot = telebot.TeleBot(TOKEN, parse_mode=None)
 
@@ -15,24 +16,18 @@ bot = telebot.TeleBot(TOKEN, parse_mode=None)
 # здоровается с пользователями
 @bot.message_handler(commands=['start'])
 def start(message):
-    file = open('users.txt', 'a', encoding='utf-8')
-    file.write(f'''User ID - {
-        message.from_user.id}, First name - {
-        message.from_user.first_name}, Last name - {
-        message.from_user.last_name}, Username - {
-        message.from_user.username}\n''')
-    file.close()
+    parse_function(message)
     if message.from_user.first_name is not None:
         bot.send_message(message.chat.id, f'Привет, {message.from_user.first_name}!')
     else:
         bot.send_message(message.chat.id, 'Рад тебя видеть!')
-    sleep(1.5)
+    sleep(1.2)
     bot.send_message(message.chat.id, 'Погнали!')
-    sleep(1)
+    sleep(0.7)
     guess_quote(message)
 
 
-@bot.message_handler(commands=['play'])
+@bot.message_handler(commands=['Продолжаем', 'Еще цитату!', 'Попробуем еще одну!', 'Дальше!'])
 def guess_quote(message):
     global TRUE_QUOTE
     # выбираем из списка список с названием фильма и цитатой для угадывания
@@ -52,51 +47,55 @@ def guess_quote(message):
     shuffle(list_quote)
 
     # создаем встроенные кнопки
-    markup = types.InlineKeyboardMarkup(row_width=1)
+    markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     # и добавляем кнопки по одной
     # в первом значении стоит название кнопики, в значении callback_data
     # стоит значение ответа кнопки, т.е., что передается при ее вызове.
-    btn1 = types.InlineKeyboardButton(f'{list_quote[0][1]}',
-                                      callback_data=f'{list_quote[0][1]}')
-    btn2 = types.InlineKeyboardButton(f'{list_quote[1][1]}',
-                                      callback_data=f'{list_quote[1][1]}')
-    btn3 = types.InlineKeyboardButton(f'{list_quote[2][1]}',
-                                      callback_data=f'{list_quote[2][1]}')
-    btn4 = types.InlineKeyboardButton(f'{list_quote[3][1]}',
-                                      callback_data=f'{list_quote[3][1]}')
-    markup.add(btn1, btn2, btn3, btn4)
+    btn1 = types.KeyboardButton(f'{list_quote[0][1]}')
+    btn2 = types.KeyboardButton(f'{list_quote[1][1]}')
+    btn3 = types.KeyboardButton(f'{list_quote[2][1]}')
+    btn4 = types.KeyboardButton(f'{list_quote[3][1]}')
+    markup.add(btn1, btn2)
+    markup.add(btn3, btn4)
     # отправляем цитату из фильма, который угадываем
     bot.send_message(message.chat.id, f'"{TRUE_QUOTE[0]}"',
                      reply_markup=markup)
 
 
 # сравниваем выданную цитату с нажатой кнопкой
-@bot.callback_query_handler(func=lambda call: True)
-def callback(call):
-    bot.register_next_step_handler(call.message, guess_quote)
+@bot.message_handler(content_types=['text'])
+def check_answer(message):
+    # register_next_step_handler() принимает два обязательных аргумента:
+    # первый это message, а второй это function. Работает таким образом:
+    # ждёт сообщ-е пользователя и вызывает указ-ю функцию с аргументом message
+    bot.register_next_step_handler(message, guess_quote)
     markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
     btn = types.KeyboardButton(
         f'''{NEXT_ROUND_SLOGAN[randrange(0, len(NEXT_ROUND_SLOGAN))]}'''
     )
     markup.add(btn)
-    if call.data == TRUE_QUOTE[1]:
-        bot.send_message(call.message.chat.id, f'Ваш выбор: {call.data}')
-        sleep(1)
+    if message.text == TRUE_QUOTE[1]:
+        # здесь хранится количество очков и правильное окончание слова 'балл'
+        points = plus_point(message)
+        ending = get_ending(points)
+        bot.send_message(message.chat.id, f'Ваш выбор: {message.text}')
+        sleep(0.5)
         bot.send_message(
-            call.message.chat.id,
-            f'''{AFTER_RIGHT_ANSWER[randrange(0, len(AFTER_RIGHT_ANSWER))]} Это "{TRUE_QUOTE[1]}"''',
+            message.chat.id,
+            f'''{AFTER_RIGHT_ANSWER[randrange(0, len(AFTER_RIGHT_ANSWER))]} Это "{TRUE_QUOTE[1]}".\n{points} {ending} вам на счет''',
             reply_markup=markup
         )
     else:
-        bot.send_message(call.message.chat.id, f'Ваш выбор: {call.data}')
-        sleep(1)
+        # здесь хранится количество очков и правильное окончание слова 'балл'
+        points = minus_point(message)
+        ending = get_ending(points)
+        bot.send_message(message.chat.id, f'Ваш выбор: {message.text}')
+        sleep(0.5)
         bot.send_message(
-            call.message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
-            0, len(AFTER_WRONG_ANSWER))]} Это не "{call.data}". Правильный ответ: "{TRUE_QUOTE[1]}"''',
+            message.chat.id, f'''{AFTER_WRONG_ANSWER[randrange(
+            0, len(AFTER_WRONG_ANSWER))]} Это не "{message.text}". Правильный ответ: "{TRUE_QUOTE[1]}".\n{points} {ending} спишем с вашего счета''',
             reply_markup=markup
         )
-    bot.edit_message_reply_markup(message.chat.id, message_id = message.message_id-1, reply_markup = '')
-
 
 
 # выводит всю доступную информацию о чате
